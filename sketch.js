@@ -1,4 +1,5 @@
 let mouse, mouseSpeed = 0.2, mouseSize = 15, tMouseSize = 15, font, player;
+let playmode = false;
 
 async function setup() {
     createCanvas(windowWidth, windowHeight);
@@ -19,6 +20,9 @@ function draw() {
     mouse = { x: lerp(mouse.x, mouseX, mouseSpeed), y: lerp(mouse.y, mouseY, mouseSpeed) };
     mouseSize = lerp(mouseSize, tMouseSize, mouseSpeed * 2); background(0);
     if (mouse.x > 100 && mouse.x < 200 && mouse.y > 100 && mouse.y < 200) tMouseSize = 30; else tMouseSize = 15;
+    if(playmode) {
+      tMouseSize = 0;
+    }
 
     // object operations
     player.update();
@@ -27,7 +31,7 @@ function draw() {
     // compositing
     blendMode(DIFFERENCE);
     circle(mouse.x, mouse.y, mouseSize);
-    blendMode(NORMAL);
+    blendMode(BLEND);
 }
 
 class Player {
@@ -36,6 +40,7 @@ class Player {
         this.vx = this.vy = this.ax = this.ay = 0;
         this.x = width / 2; this.y = height / 2;
         this.ax = 0.2;
+        this.dir = 0;
     }
 
     draw() {
@@ -50,14 +55,28 @@ class Player {
         this.y += this.vy;
     }
 
-    click() {
-        this.vx = this.vy = 0;
+    clock() {
+        if(!playmode) playmode = true;
+        let t = this.vx * 0.9;
+        this.vx = -this.vy * 0.9;
+        this.vy = t;
+        this.dir = (this.dir + 1) % 4;
+        switch(this.dir) {
+          case 0:
+            this.ax = 0.2; this.ay = 0; break;
+          case 1: 
+            this.ax = 0; this.ay = 0.2; break;
+          case 2:
+            this.ax = -0.2; this.ay = 0; break;
+          case 3:
+            this.ax = 0; this.ay = -0.2; break;
+        }
     }
 }
 function keyPressed() {
-    player.click();
+    player.clock();
 }
 
 function mousePressed(e) {
-    player.click();
+    player.clock();
 }
