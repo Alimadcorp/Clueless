@@ -2,6 +2,7 @@ let mouse, mouseSpeed = 0.2, mouseSize = 15, tMouseSize = 15, font, player;
 let drag = 0.8;
 let layer = 0; // 0 = pause, 1 = playing, 2 = lose
 let score = 0, lScore = 0;
+let objects = [];
 
 async function setup() {
     createCanvas(windowWidth, windowHeight);
@@ -14,6 +15,8 @@ async function setup() {
     mouse = { x: mouseX, y: mouseY };
     player = new Player();
     rectMode(CENTER);
+    objects.push(new Obj(500, 500, 20, "norm"));
+    objects.push(new Obj(500, 600, 20, "red"));
 }
 
 function lerp(p0, p1, t) { return (1 - t) * p0 + t * p1; }
@@ -28,6 +31,9 @@ function draw() {
     // object operations
     if (layer == 1) {
         player.update();
+    }
+    for (let obj of objects) {
+        obj.draw();
     }
     player.draw();
 
@@ -55,8 +61,8 @@ async function callLose() {
     layer = 2;
     let pi = { x: player.x, y: player.y };
     for (let i = 0; i <= 100; i++) {
-        player.x = lerp(pi.x, width/2, i / 100);
-        player.y = lerp(pi.y, height/2, i / 100);
+        player.x = lerp(pi.x, width / 2, i / 100);
+        player.y = lerp(pi.y, height / 2, i / 100);
         await delay(5);
     }
     //alert("You scored " + lScore + "!");
@@ -88,6 +94,21 @@ class Player {
         this.accFactor += 0.0005 * this.accFactorFactor;
         if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
             callLose();
+        } else {
+            for (let obj of objects) {
+                let tH = this.size / 2;
+                let oH = obj.size / 2;
+                if (
+                    this.x - tH < obj.x + oH &&
+                    this.x + tH > obj.x - oH &&
+                    this.y - tH < obj.y + oH &&
+                    this.y + tH > obj.y - oH
+                ) {
+                    obj.vx = this.vx * (0.7 + Math.random() * 0.4) / 2;
+                    obj.vy = this.vy * (0.7 + Math.random() * 0.4) / 2;
+                    obj.vs = 0.5 + Math.random();
+                }
+            }
         }
     }
 
@@ -114,6 +135,36 @@ class Player {
         }
     }
 }
+
+class Obj {
+    constructor(x, y, size, type) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.type = type;
+        this.vx = this.vy = this.vs = 0;
+        this.s2 = size - 2;
+    }
+
+    draw() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.size -= this.vs;
+        this.s2 += this.vs * 2;
+        if (this.size < 0) {
+            return;
+        }
+        let col = this.type == "norm" ? color(255, 255 * this.size / 20) : color(255, 0, 0, 255 * this.size / 20);
+        stroke(col);
+        strokeWeight(4);
+        noFill();
+        rect(this.x, this.y, this.s2);
+        noStroke();
+        fill(col);
+        rect(this.x, this.y, this.size);
+    }
+}
+
 function keyPressed() {
     player.clock();
 }
