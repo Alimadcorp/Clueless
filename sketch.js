@@ -3,6 +3,8 @@ let drag = 0.8;
 let layer = 0; // 0 = pause, 1 = playing, 2 = lose
 let score = 0, lScore = 0;
 let objects = [];
+let highScore = Number(localStorage.getItem("highScore")) || 0;
+let inputTime = -1000;
 
 async function setup() {
     createCanvas(windowWidth, windowHeight);
@@ -31,8 +33,17 @@ function draw() {
     if (layer == 1) {
         player.update();
     }
+    let count = objects.length;
     for (let obj of objects) {
         obj.draw();
+    }
+    objects = objects.filter(obj => obj.size >= 0);
+    if (layer == 1) {
+        while (objects.length < count) {
+            objects.push(new Obj(width * Math.random(), height * Math.random(), 20,
+                objects.filter(obj => obj.type == "red").length < 3 && Math.random() < 0.2 ? "red" : "norm"));
+            count--;
+        }
     }
     player.draw();
 
@@ -40,13 +51,14 @@ function draw() {
         tMouseSize = 0;
         blendMode(DIFFERENCE);
         text("Score: " + Math.floor(lScore), width / 2, 50);
+        text("Best: " + highScore, width / 2, 80);
         blendMode(BLEND);
         lScore = lerp(lScore, score, 0.1);
     } else if (layer == 0) {
         text("Click rapidly to switch directions, do not hit the walls", width / 2, height * 3 / 4)
     } else if (layer == 2) {
         tMouseSize = 15;
-        text("Game Over! Score: " + Math.floor(lScore) + "\nClick to restart", width / 2, height / 2 + 50);
+        text("Game Over! Score: " + Math.floor(lScore) + "\nBest: " + highScore + "\nClick to restart", width / 2, height / 2 + 50);
     }
 
     // compositing
@@ -56,11 +68,14 @@ function draw() {
 }
 
 async function callLose() {
+    if (layer != 1) return;
     lScore = score;
+    highScore = Math.max(highScore, Math.floor(score));
+    localStorage.setItem("highScore", highScore);
     score = 0;
     layer = 2;
     let pi = { x: player.x, y: player.y };
-    for (let i = 0; i <= 100; i++) {
+    for (let i = 0; i <= 100 && layer == 2; i++) {
         player.x = lerp(pi.x, width / 2, i / 100);
         player.y = lerp(pi.y, height / 2, i / 100);
         await delay(5);
@@ -104,12 +119,14 @@ class Player {
                     this.y - tH < obj.y + oH &&
                     this.y + tH > obj.y - oH
                 ) {
+                    if (layer != 1) return;
                     obj.vx = this.vx * (0.7 + Math.random() * 0.4) / 2;
                     obj.vy = this.vy * (0.7 + Math.random() * 0.4) / 2;
                     obj.vs = 0.5 + Math.random();
                     if (obj.type == "norm") {
                         score += Math.random() * 10;
-                        objects.push(new Obj(width * Math.random(), height * Math.random(), 20, Math.random() > 0.2 ? "norm" : "red"));
+                        objects.push(new Obj(width * Math.random(), height * Math.random(), 20,
+                            objects.filter(obj => obj.type == "red").length < 3 && Math.random() < 0.2 ? "red" : "norm"));
                     }
                     else { callLose(); }
                 }
@@ -118,6 +135,8 @@ class Player {
     }
 
     clock() {
+        if (millis() - inputTime < 100) return;
+        inputTime = millis();
         if (layer == 2) {
             player = new Player();
             layer = 0;
@@ -157,7 +176,7 @@ class Obj {
         this.x += this.vx;
         this.y += this.vy;
         this.age -= 1;
-        if (this.age < 0) {
+        if (this.age < 0 && this.vs == 0) {
             this.vs = 0.5 + Math.random();
         }
         this.size -= this.vs;
@@ -165,7 +184,7 @@ class Obj {
         if (this.size < 0) {
             return;
         }
-        if(this.vs == 0) { this.size = lerp(this.size, this.tSize, 0.1); }
+        if (this.vs == 0) { this.size = lerp(this.size, this.tSize, 0.1); }
         let col = this.type == "norm" ? color(255, 255 * this.size / 20) : color(255, 0, 0, 255 * this.size / 20);
         stroke(col);
         strokeWeight(4);
