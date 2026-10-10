@@ -15,8 +15,7 @@ async function setup() {
     mouse = { x: mouseX, y: mouseY };
     player = new Player();
     rectMode(CENTER);
-    objects.push(new Obj(500, 500, 20, "norm"));
-    objects.push(new Obj(500, 600, 20, "red"));
+    objects.push(new Obj(width * Math.random(), height * Math.random(), 20, "norm"));
 }
 
 function lerp(p0, p1, t) { return (1 - t) * p0 + t * p1; }
@@ -40,13 +39,14 @@ function draw() {
     if (layer == 1) {
         tMouseSize = 0;
         blendMode(DIFFERENCE);
-        text("Score: " + Math.ceil(score), width / 2, 50);
+        text("Score: " + Math.floor(lScore), width / 2, 50);
         blendMode(BLEND);
+        lScore = lerp(lScore, score, 0.1);
     } else if (layer == 0) {
         text("Click rapidly to switch directions, do not hit the walls", width / 2, height * 3 / 4)
     } else if (layer == 2) {
         tMouseSize = 15;
-        text("Game Over! Score: " + Math.ceil(lScore) + "\nClick to restart", width / 2, height / 2 + 50);
+        text("Game Over! Score: " + Math.floor(lScore) + "\nClick to restart", width / 2, height / 2 + 50);
     }
 
     // compositing
@@ -89,9 +89,9 @@ class Player {
         this.vy += this.ay;
         this.x += this.vx;
         this.y += this.vy;
-        this.accFactorFactor -= 0.0005;
+        this.accFactorFactor -= 0.0001;
         if (this.accFactorFactor < 0) this.accFactorFactor = 0;
-        this.accFactor += 0.0005 * this.accFactorFactor;
+        this.accFactor += 0.0001 * this.accFactorFactor;
         if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
             callLose();
         } else {
@@ -107,6 +107,11 @@ class Player {
                     obj.vx = this.vx * (0.7 + Math.random() * 0.4) / 2;
                     obj.vy = this.vy * (0.7 + Math.random() * 0.4) / 2;
                     obj.vs = 0.5 + Math.random();
+                    if (obj.type == "norm") {
+                        score += Math.random() * 10;
+                        objects.push(new Obj(width * Math.random(), height * Math.random(), 20, Math.random() > 0.2 ? "norm" : "red"));
+                    }
+                    else { callLose(); }
                 }
             }
         }
@@ -140,20 +145,27 @@ class Obj {
     constructor(x, y, size, type) {
         this.x = x;
         this.y = y;
-        this.size = size;
+        this.size = 0;
+        this.tSize = size;
         this.type = type;
         this.vx = this.vy = this.vs = 0;
         this.s2 = size - 2;
+        this.age = 3000;
     }
 
     draw() {
         this.x += this.vx;
         this.y += this.vy;
+        this.age -= 1;
+        if (this.age < 0) {
+            this.vs = 0.5 + Math.random();
+        }
         this.size -= this.vs;
         this.s2 += this.vs * 2;
         if (this.size < 0) {
             return;
         }
+        if(this.vs == 0) { this.size = lerp(this.size, this.tSize, 0.1); }
         let col = this.type == "norm" ? color(255, 255 * this.size / 20) : color(255, 0, 0, 255 * this.size / 20);
         stroke(col);
         strokeWeight(4);
