@@ -7,7 +7,7 @@ Made with p5.js for the Tagless YSWS @ Hackclub
 
 ## Run
 
-This is a static site, you can do a localserver host and open index.html to play, or just go to
+This is a static site, you can do a localserver host and open `index.html` to play, or just go to
 
 https://clueless.alimad.co
 
