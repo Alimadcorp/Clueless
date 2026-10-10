@@ -20,8 +20,9 @@ async function setup() {
     objects.push(new Obj(width * Math.random(), height * Math.random(), 20, "norm"));
 }
 
-function lerp(p0, p1, t) { return (1 - t) * p0 + t * p1; }
 function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+function keyPressed() { player.clock(); }
+function mousePressed(e) { player.clock(); }
 
 function draw() {
     // processing
@@ -194,12 +195,4 @@ class Obj {
         fill(col);
         rect(this.x, this.y, this.size);
     }
-}
-
-function keyPressed() {
-    player.clock();
-}
-
-function mousePressed(e) {
-    player.clock();
 }
